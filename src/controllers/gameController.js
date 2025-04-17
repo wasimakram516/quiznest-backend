@@ -10,9 +10,21 @@ const sanitizeSlug = (str) =>
   str
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-") 
-    .replace(/[^a-z0-9\-]/g, ""); 
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9\-]/g, "");
 
+// 🔁 Generate a unique slug under the same business
+const generateUniqueGameSlug = async (baseSlug, businessId) => {
+  let slug = baseSlug;
+  let count = 1;
+
+  while (await Game.findOne({ businessId, slug })) {
+    slug = `${baseSlug}-${count}`;
+    count++;
+  }
+
+  return slug;
+};
 
 // ✅ Create Game using businessSlug
 exports.createGame = asyncHandler(async (req, res) => {
@@ -37,25 +49,34 @@ exports.createGame = asyncHandler(async (req, res) => {
 
   const businessId = business._id;
 
-  // 🔁 Check for duplicate slug under this business
-  const existing = await Game.findOne({ businessId, slug: sanitizedSlug });
-  if (existing) return response(res, 409, "Game slug already exists under this business");
+  const finalSlug = await generateUniqueGameSlug(sanitizedSlug, businessId);
 
   // 🖼️ Handle image uploads
-  let coverImage = "", nameImage = "", backgroundImage = "";
+  let coverImage = "",
+    nameImage = "",
+    backgroundImage = "";
 
   if (req.files?.cover) {
-    const uploaded = await uploadToCloudinary(req.files.cover[0].buffer, req.files.cover[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.cover[0].buffer,
+      req.files.cover[0].mimetype
+    );
     coverImage = uploaded.secure_url;
   }
 
   if (req.files?.name) {
-    const uploaded = await uploadToCloudinary(req.files.name[0].buffer, req.files.name[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.name[0].buffer,
+      req.files.name[0].mimetype
+    );
     nameImage = uploaded.secure_url;
   }
 
   if (req.files?.background) {
-    const uploaded = await uploadToCloudinary(req.files.background[0].buffer, req.files.background[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.background[0].buffer,
+      req.files.background[0].mimetype
+    );
     backgroundImage = uploaded.secure_url;
   }
 
@@ -63,7 +84,7 @@ exports.createGame = asyncHandler(async (req, res) => {
   const game = await Game.create({
     businessId,
     title,
-    slug: sanitizedSlug,
+    slug: finalSlug,
     coverImage,
     nameImage,
     backgroundImage,
@@ -80,23 +101,21 @@ exports.updateGame = asyncHandler(async (req, res) => {
   const game = await Game.findById(req.params.id);
   if (!game) return response(res, 404, "Game not found");
 
-  const {
-    title,
-    slug,
-    choicesCount,
-    countdownTimer,
-    gameSessionTimer,
-  } = req.body;
+  const { title, slug, choicesCount, countdownTimer, gameSessionTimer } =
+    req.body;
 
   if (slug && slug !== game.slug) {
     const sanitizedSlug = sanitizeSlug(slug);
+    const conflict = await Game.findOne({
+      businessId: game.businessId,
+      slug: sanitizedSlug,
+    });
 
-    const existing = await Game.findOne({ businessId: game.businessId, slug: sanitizedSlug });
-    if (existing) {
-      return response(res, 409, "Slug already in use under this business");
+    if (conflict && conflict._id.toString() !== game._id.toString()) {
+      game.slug = await generateUniqueGameSlug(sanitizedSlug, game.businessId);
+    } else {
+      game.slug = sanitizedSlug;
     }
-
-    game.slug = sanitizedSlug;
   }
 
   game.title = title || game.title;
@@ -107,19 +126,28 @@ exports.updateGame = asyncHandler(async (req, res) => {
   // Replace images if new ones provided
   if (req.files?.cover) {
     if (game.coverImage) await deleteImage(game.coverImage);
-    const uploaded = await uploadToCloudinary(req.files.cover[0].buffer, req.files.cover[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.cover[0].buffer,
+      req.files.cover[0].mimetype
+    );
     game.coverImage = uploaded.secure_url;
   }
 
   if (req.files?.name) {
     if (game.nameImage) await deleteImage(game.nameImage);
-    const uploaded = await uploadToCloudinary(req.files.name[0].buffer, req.files.name[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.name[0].buffer,
+      req.files.name[0].mimetype
+    );
     game.nameImage = uploaded.secure_url;
   }
 
   if (req.files?.background) {
     if (game.backgroundImage) await deleteImage(game.backgroundImage);
-    const uploaded = await uploadToCloudinary(req.files.background[0].buffer, req.files.background[0].mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.files.background[0].buffer,
+      req.files.background[0].mimetype
+    );
     game.backgroundImage = uploaded.secure_url;
   }
 

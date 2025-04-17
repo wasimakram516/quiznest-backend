@@ -10,8 +10,21 @@ const sanitizeSlug = (str) =>
   str
     .toLowerCase()
     .trim()
-    .replace(/\s+/g, "-")         // Replace spaces with hyphens
+    .replace(/\s+/g, "-") // Replace spaces with hyphens
     .replace(/[^a-z0-9\-]/g, ""); // Remove special characters
+
+// ✅ Generate a unique slug by appending -1, -2, etc.
+const generateUniqueSlug = async (baseSlug) => {
+  let slug = baseSlug;
+  let count = 1;
+
+  while (await Business.findOne({ slug })) {
+    slug = `${baseSlug}-${count}`;
+    count++;
+  }
+
+  return slug;
+};
 
 // ✅ Create Business
 exports.createBusiness = asyncHandler(async (req, res) => {
@@ -22,22 +35,20 @@ exports.createBusiness = asyncHandler(async (req, res) => {
   }
 
   const sanitizedSlug = sanitizeSlug(slug);
-
-  // Check if slug already exists
-  const existing = await Business.findOne({ slug: sanitizedSlug });
-  if (existing) {
-    return response(res, 409, "Slug already in use. Please choose another.");
-  }
+  const finalSlug = await generateUniqueSlug(sanitizedSlug);
 
   let logoUrl = "";
   if (req.file) {
-    const uploaded = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.file.buffer,
+      req.file.mimetype
+    );
     logoUrl = uploaded.secure_url;
   }
 
   const business = await Business.create({
     name,
-    slug: sanitizedSlug,
+    slug: finalSlug,
     logoUrl,
     description,
     createdBy: req.user.id,
@@ -73,11 +84,15 @@ exports.updateBusiness = asyncHandler(async (req, res) => {
   // If slug is being changed, sanitize and check for conflict
   if (slug && slug !== business.slug) {
     const sanitizedSlug = sanitizeSlug(slug);
-    const slugExists = await Business.findOne({ slug: sanitizedSlug });
-    if (slugExists) {
-      return response(res, 409, "Slug already in use by another business");
+    const finalSlug = await generateUniqueSlug(sanitizedSlug);
+
+    // Only allow if it's not taken by a different business
+    const conflict = await Business.findOne({ slug: finalSlug });
+    if (conflict && conflict._id.toString() !== business._id.toString()) {
+      business.slug = await generateUniqueSlug(sanitizedSlug);
+    } else {
+      business.slug = finalSlug;
     }
-    business.slug = sanitizedSlug;
   }
 
   business.name = name || business.name;
@@ -87,7 +102,10 @@ exports.updateBusiness = asyncHandler(async (req, res) => {
     if (business.logoUrl) {
       await deleteImage(business.logoUrl);
     }
-    const uploaded = await uploadToCloudinary(req.file.buffer, req.file.mimetype);
+    const uploaded = await uploadToCloudinary(
+      req.file.buffer,
+      req.file.mimetype
+    );
     business.logoUrl = uploaded.secure_url;
   }
 
