@@ -1,7 +1,7 @@
 const multer = require("multer");
 
 // ✅ Allowed file types
-const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png"];
+const allowedImageTypes = ["image/jpeg", "image/jpg", "image/png", "image/gif"];
 const allowedVideoTypes = ["video/mp4", "video/mpeg", "video/quicktime"];
 const allowedExcelTypes = [
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", // .xlsx
@@ -21,7 +21,7 @@ const storage = multer.memoryStorage();
 const fileFilter = (req, file, cb) => {
   if (!allowedTypes.includes(file.mimetype)) {
     return cb(
-      new Error("Invalid file type. Allowed: JPG, PNG, MP4, MOV, XLSX, XLS"),
+      new Error("Invalid file type. Allowed: JPG, PNG, GIF, MP4, MOV, XLSX, XLS"),
       false
     );
   }
