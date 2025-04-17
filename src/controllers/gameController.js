@@ -20,12 +20,12 @@ exports.createGame = asyncHandler(async (req, res) => {
     businessSlug,
     title,
     slug,
-    optionCount,
-    countdownTime,
-    quizTime,
+    choicesCount,
+    countdownTimer,
+    gameSessionTimer,
   } = req.body;
 
-  if (!businessSlug || !title || !slug || !optionCount || !quizTime) {
+  if (!businessSlug || !title || !slug || !choicesCount || !gameSessionTimer) {
     return response(res, 400, "Missing required fields");
   }
 
@@ -67,9 +67,9 @@ exports.createGame = asyncHandler(async (req, res) => {
     coverImage,
     nameImage,
     backgroundImage,
-    choicesCount: optionCount,
-    countdownTimer: countdownTime || 3,
-    gameSessionTimer: quizTime,
+    choicesCount,
+    countdownTimer: countdownTimer || 3,
+    gameSessionTimer,
   });
 
   return response(res, 201, "Game created", game);
