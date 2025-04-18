@@ -64,35 +64,49 @@ exports.uploadQuestions = asyncHandler(async (req, res) => {
 
   if (!rows.length) return response(res, 400, "Excel file is empty");
 
-  const questions = rows.map((row) => {
+  const questions = rows.map((row, index) => {
+    const questionText = row["Question"]?.toString().trim();
     const choicesCount = game.choicesCount;
+
+    if (!questionText) {
+      throw new Error(`Row ${index + 2}: Missing or invalid Question`);
+    }
 
     const answers = [];
     for (let i = 1; i <= choicesCount; i++) {
       const optionKey = `Option${i}`;
       const value = row[optionKey];
-      if (!value || typeof value !== "string") {
+      if (value === undefined || value === null || value.toString().trim() === "") {
         throw new Error(
-          `Row "${row.Question}": Missing or invalid ${optionKey}`
+          `Row "${questionText}": Missing or invalid ${optionKey}`
         );
       }
-      answers.push(value.trim());
+      answers.push(value.toString().trim());
     }
 
-    const correctAnswer = row.CorrectAnswer?.trim();
-    const correctIndex = answers.findIndex((a) => a === correctAnswer);
+    const correctAnswerRaw = row["CorrectAnswer"];
+    const correctAnswer = correctAnswerRaw?.toString().trim();
 
-    if (correctIndex === -1) {
+    if (!correctAnswer) {
       throw new Error(
-        `Row "${row.Question}": CorrectAnswer "${row.CorrectAnswer}" does not match any of the ${choicesCount} options`
+        `Row "${questionText}": Missing or invalid CorrectAnswer`
       );
     }
 
+    const correctIndex = answers.findIndex((a) => a === correctAnswer);
+    if (correctIndex === -1) {
+      throw new Error(
+        `Row "${questionText}": CorrectAnswer "${correctAnswer}" does not match any of the ${choicesCount} options`
+      );
+    }
+
+    const hint = row["Hint"]?.toString().trim() || "";
+
     return {
-      question: row.Question,
+      question: questionText,
       answers,
       correctAnswerIndex: correctIndex,
-      hint: row.Hint?.trim() || "", // ✅ support optional Hint
+      hint,
     };
   });
 
