@@ -101,8 +101,7 @@ exports.getLeaderboard = asyncHandler(async (req, res) => {
   const gameId = req.params.gameId;
 
   const players = await Player.find({ gameId, status: "played" })
-    .sort({ score: -1, timeTaken: 1 })
-    .limit(20);
+    .sort({ score: -1, timeTaken: 1 });
 
   return response(res, 200, "Leaderboard", players);
 });
