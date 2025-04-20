@@ -34,8 +34,10 @@ exports.exportResults = asyncHandler(async (req, res) => {
 
   const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
 
-  const safeCompany = game.businessId.name.replace(/\s+/g, "_");
-  const safeTitle = game.title.replace(/\s+/g, "_");
+  const sanitizeFilename = (name) => name.replace(/[^a-zA-Z0-9-_]/g, "_");
+
+  const safeCompany = sanitizeFilename(game.businessId.name);
+  const safeTitle = sanitizeFilename(game.title);
   const filename = `${safeCompany}-${safeTitle}-results.xlsx`;
 
   res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
@@ -100,8 +102,10 @@ exports.getPlayersByGame = asyncHandler(async (req, res) => {
 exports.getLeaderboard = asyncHandler(async (req, res) => {
   const gameId = req.params.gameId;
 
-  const players = await Player.find({ gameId, status: "played" })
-    .sort({ score: -1, timeTaken: 1 });
+  const players = await Player.find({ gameId, status: "played" }).sort({
+    score: -1,
+    timeTaken: 1,
+  });
 
   return response(res, 200, "Leaderboard", players);
 });
