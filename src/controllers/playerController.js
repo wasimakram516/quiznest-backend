@@ -16,7 +16,10 @@ exports.exportResults = asyncHandler(async (req, res) => {
   const game = await Game.findById(gameId).populate("businessId", "name");
   if (!game) return response(res, 404, "Game not found");
 
-  const players = await Player.find({ gameId, status: "played" }).sort({ createdAt: -1 });
+  const players = await Player.find({ gameId, status: "played" }).sort({
+    score: -1,
+    timeTaken: 1,
+  });
 
   const exportData = players.map((p) => ({
     Name: p.name,
