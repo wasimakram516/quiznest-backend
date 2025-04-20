@@ -194,7 +194,7 @@ exports.deleteGame = asyncHandler(async (req, res) => {
   // Check if any players exist under this game
   const playersExist = await Player.exists({ gameId: game._id });
   if (playersExist) {
-    return response(res, 400, "Cannot delete game with existing players");
+    return response(res, 400, "Cannot delete game with existing game sessions");
   }
 
   // Delete associated images from Cloudinary
