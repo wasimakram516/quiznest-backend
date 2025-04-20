@@ -32,19 +32,30 @@ exports.exportResults = asyncHandler(async (req, res) => {
   const workbook = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(workbook, worksheet, "Results");
 
-  const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+  // explicitly set UTF-8 encoding
+  const buffer = XLSX.write(workbook, {
+    type: "buffer",
+    bookType: "xlsx",
+    compression: true,
+  });
 
-  const sanitizeFilename = (name) => name.replace(/[^a-zA-Z0-9-_]/g, "_");
+  // safer filename generation (allowing Unicode)
+  const sanitizeFilename = (name) => name.replace(/[^\w\u0600-\u06FF-]/g, "_");
 
   const safeCompany = sanitizeFilename(game.businessId.name);
   const safeTitle = sanitizeFilename(game.title);
   const filename = `${safeCompany}-${safeTitle}-results.xlsx`;
 
-  res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+  res.setHeader(
+    "Content-Disposition",
+    `attachment; filename*=UTF-8''${encodeURIComponent(filename)}`
+  );
+
   res.setHeader(
     "Content-Type",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=UTF-8"
   );
+
   return res.send(buffer);
 });
 
