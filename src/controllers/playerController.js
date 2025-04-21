@@ -23,7 +23,7 @@ exports.exportResults = asyncHandler(async (req, res) => {
 
   const exportData = players.map((p) => ({
     Name: p.name,
-    Company: p.company || "-",
+    // Company: p.company || "-",
     Score: p.score,
     TimeTaken: p.timeTaken,
     AttemptedQuestions: p.attemptedQuestions,
