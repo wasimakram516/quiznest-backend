@@ -8,6 +8,7 @@ const businessRoutes = require("./routes/businessRoutes");
 const gameRoutes = require("./routes/gameRoutes");
 const playerRoutes = require("./routes/playerRoutes");
 const questionRoutes = require("./routes/questionRoutes");
+const translateRoutes = require("./routes/translateRoutes");
 const app = express();
 
 // Middleware
@@ -38,7 +39,7 @@ app.use("/api/businesses", businessRoutes);
 app.use("/api/games", gameRoutes);
 app.use("/api/players", playerRoutes);
 app.use("/api/questions", questionRoutes);
-
+app.use("/api/translate", translateRoutes);
 // Health Check
 app.get("/", (req, res) => {
   console.log("📡 QuizNest Server is running...");
