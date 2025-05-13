@@ -1,18 +1,33 @@
 // controllers/translateController.js
 const { translate } = require("google-translate-api-x");
+const response = require("../utils/response");
 
 exports.translateText = async (req, res) => {
   const { text, targetLang } = req.body;
-
+  
   if (!text || !targetLang) {
-    return res.status(400).json({ error: "Missing text or target language" });
+    return response(
+      res,
+      400,
+      "Missing text or target language",
+      null,
+      "Missing required fields"
+    );
   }
 
   try {
     const result = await translate(text, { to: targetLang });
-    res.json({ translatedText: result.text });
+
+    return response(res, 200, "Translation successful", {
+      translatedText: result.text,
+    });
   } catch (err) {
-    console.error("Translation error:", err);
-    res.status(500).json({ error: "Translation failed" });
+     return response(
+       res,
+       500,
+       "Translation failed",
+       null,
+       err.message || "Internal server error"
+     );
   }
 };
